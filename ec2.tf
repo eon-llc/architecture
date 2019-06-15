@@ -1,11 +1,13 @@
-resource "aws_instance" "eon" {
-  ami           = "ami-0c6b1d09930fac512"
+resource "aws_instance" "eon-website" {
+  ami           = "${var.amazon_linux_ami}"
   instance_type = "t2.micro"
 
-  vpc_security_group_ids = ["${aws_security_group.allow_http.id}", "${aws_security_group.allow_https.id}", "${aws_security_group.allow_ssh.id}"]
-  key_name               = "${aws_key_pair.serg.key_name}"
+  subnet_id                   = "${aws_subnet.public_subnet.id}"
+  vpc_security_group_ids      = ["${aws_security_group.allow_web.id}"]
+  associate_public_ip_address = true
+  source_dest_check           = false
 
   tags = {
-    Name = "Website"
+    Name = "Eon Website"
   }
 }
