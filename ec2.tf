@@ -1,4 +1,4 @@
-resource "aws_instance" "eon-website" {
+resource "aws_instance" "eon_website" {
   ami           = "${var.amazon_linux_ami}"
   instance_type = "t2.micro"
 
