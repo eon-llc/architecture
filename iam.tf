@@ -208,3 +208,54 @@ resource "aws_iam_role_policy" "ecs" {
 }
 POLICY
 }
+
+resource "aws_iam_role" "eon_pull_request" {
+  name = "eon_pull_request_role"
+
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "Service": "codebuild.amazonaws.com"
+      },
+      "Action": "sts:AssumeRole"
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy" "eon_pull_request_policy" {
+  name = "eon_pull_request_policy"
+  role = "${aws_iam_role.eon_pull_request.id}"
+
+  policy = <<POLICY
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "codebuild:BatchGetBuilds",
+        "codebuild:StartBuild",
+        "logs:*"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "ecr:GetRepositoryPolicy",
+        "ecr:SetRepositoryPolicy"
+      ],
+      "Resource": [
+        "${aws_ecr_repository.eon_website_test.arn}"
+      ]
+    }
+  ]
+}
+POLICY
+}
