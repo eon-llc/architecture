@@ -46,3 +46,33 @@ resource "aws_codebuild_project" "eon_website_test" {
     type = "CODEPIPELINE"
   }
 }
+
+resource "aws_codebuild_project" "website_test_pull_request" {
+  name          = "eon_website_test_pull_request"
+  description   = "Test on pull request"
+  build_timeout = "5"
+  service_role  = "${aws_iam_role.eon_pull_request.arn}"
+
+  environment {
+    compute_type = "BUILD_GENERAL1_SMALL"
+    image        = "${aws_ecr_repository.eon_website_test.repository_url}"
+    type         = "LINUX_CONTAINER"
+  }
+
+  source {
+    type                = "GITHUB"
+    location            = "https://github.com/eon-llc/website.git"
+    git_clone_depth     = 1
+    report_build_status = true
+    buildspec           = "build/specs/test_spec.yml"
+  }
+
+  artifacts {
+    type = "NO_ARTIFACTS"
+  }
+}
+
+resource "aws_codebuild_webhook" "website_test_pull_request" {
+  project_name  = "${aws_codebuild_project.website_test_pull_request.name}"
+  branch_filter = "master"
+}
