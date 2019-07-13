@@ -21,3 +21,12 @@ resource "aws_route53_record" "website" {
     evaluate_target_health = false
   }
 }
+
+resource "aws_route53_record" "github_verification" {
+  name    = "_github-challenge-eon-llc.eon.llc."
+  ttl     = 30
+  type    = "TXT"
+  zone_id = "${aws_route53_zone.eon.zone_id}"
+
+  records = ["b395afeb96"]
+}
