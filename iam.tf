@@ -259,3 +259,46 @@ resource "aws_iam_role_policy" "eon_pull_request_policy" {
 }
 POLICY
 }
+
+resource "aws_iam_role" "lambda" {
+  name = "lambda"
+
+  assume_role_policy = <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Action": "sts:AssumeRole",
+      "Principal": {
+        "Service": [
+          "lambda.amazonaws.com",
+          "apigateway.amazonaws.com"
+        ]
+      },
+      "Effect": "Allow",
+      "Sid": ""
+    }
+  ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy" "lambda" {
+  name = "lambda"
+  role = "${aws_iam_role.lambda.id}"
+
+  policy = <<POLICY
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "lambda:InvokeFunction"
+      ],
+      "Resource": "arn:aws:lambda:*:*:*"
+    }
+  ]
+}
+POLICY
+}
