@@ -34,6 +34,7 @@ exports.handler = (event, context, callback) => {
 
         let num_repos = 0;
         let num_commits = 0;
+        let num_issues = 0;
 
         await fetch('/orgs/eon-llc/repos').then( async (repos) => {
 
@@ -42,6 +43,7 @@ exports.handler = (event, context, callback) => {
             for (const repo of repos) {
                 // for every repository
                 let stats_path = "/repos/" + repo.full_name + "/stats/contributors";
+                num_issues += repo.open_issues_count;
 
                 num_commits += await fetch(stats_path).then((contributors) => {
                     let commits = 0;
@@ -56,7 +58,8 @@ exports.handler = (event, context, callback) => {
 
         let responseBody = {
             num_repos: num_repos,
-            num_commits: num_commits
+            num_commits: num_commits,
+            num_issues: num_issues
         };
 
         return {
