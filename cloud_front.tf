@@ -37,6 +37,13 @@ resource "aws_cloudfront_distribution" "production-bucket-eon" {
     max_ttl                = 1200
   }
 
+  custom_error_response {
+    error_caching_min_ttl = 5
+    error_code            = 404
+    response_page_path    = "/index.html"
+    response_code         = 200
+  }
+
   restrictions {
     geo_restriction {
       restriction_type = "none"
