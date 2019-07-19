@@ -70,7 +70,7 @@ resource "aws_api_gateway_integration_response" "options_integration_response" {
 }
 
 # --------------------------------------------------
-# GET method, for fetching the stats
+# GET method, for fetching GitHub stats
 # --------------------------------------------------
 resource "aws_api_gateway_method" "github" {
   rest_api_id   = "${aws_api_gateway_rest_api.eon.id}"
@@ -146,6 +146,9 @@ resource "aws_api_gateway_method_settings" "github" {
   }
 }
 
+# --------------------------------------------------
+# DEPLOYMENT
+# --------------------------------------------------
 resource "aws_api_gateway_deployment" "github" {
   rest_api_id = "${aws_api_gateway_rest_api.eon.id}"
 
