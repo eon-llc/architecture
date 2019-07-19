@@ -153,4 +153,15 @@ resource "aws_api_gateway_deployment" "github" {
     "aws_api_gateway_integration.lambda",
     "aws_api_gateway_integration_response.lambda",
   ]
+
+  // forces a re-deployment
+  variables {
+    deployed_at = "${timestamp()}"
+  }
+
+  // avoids the error of active stages
+  // having nothing to point to during delete and creation
+  lifecycle {
+    create_before_destroy = true
+  }
 }
