@@ -34,7 +34,7 @@ variable "amazon_linux_ami" {
 
 variable "ubuntu_18_ami" {
   description = "Amazon Linux AMI"
-  default     = "ami-024a64a6685d05041"
+  default     = "ami-07d0cf3af28718ef8"
 }
 
 variable "ubuntu_16_ami" {
