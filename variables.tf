@@ -2,6 +2,15 @@ variable "access_key" {}
 variable "secret_key" {}
 variable "github_token" {}
 
+variable "testnet_account_name" {}
+variable "testnet_public_key" {}
+variable "testnet_private_key" {}
+
+variable "eon_domain" {
+  description = "Primary domain of Eon, LLC"
+  default     = "https://eon.llc"
+}
+
 variable "region" {
   description = "Region for the VPC"
   default     = "us-east-1"
@@ -12,14 +21,9 @@ variable "vpc_cidr" {
   default     = "10.0.0.0/16"
 }
 
-variable "public_subnet_a_cidr" {
-  description = "CIDR for the public subnet a"
+variable "public_subnet_cidr" {
+  description = "CIDR for the public subnet"
   default     = "10.0.1.0/24"
-}
-
-variable "public_subnet_b_cidr" {
-  description = "CIDR for the public subnet b"
-  default     = "10.0.2.0/24"
 }
 
 variable "private_subnet_cidr" {
