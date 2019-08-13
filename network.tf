@@ -15,30 +15,20 @@ resource "aws_internet_gateway" "gw" {
   }
 }
 
-resource "aws_subnet" "public_subnet_a" {
+resource "aws_subnet" "public_subnet" {
   vpc_id            = "${aws_vpc.eon.id}"
-  cidr_block        = "${var.public_subnet_a_cidr}"
+  cidr_block        = "${var.public_subnet_cidr}"
   availability_zone = "${var.region}a"
 
   tags {
-    Name = "Public subnet a for web traffic"
-  }
-}
-
-resource "aws_subnet" "public_subnet_b" {
-  vpc_id            = "${aws_vpc.eon.id}"
-  cidr_block        = "${var.public_subnet_b_cidr}"
-  availability_zone = "${var.region}b"
-
-  tags {
-    Name = "Public subnet b for web traffic"
+    Name = "Public subnet"
   }
 }
 
 resource "aws_subnet" "private_subnet" {
   vpc_id            = "${aws_vpc.eon.id}"
   cidr_block        = "${var.private_subnet_cidr}"
-  availability_zone = "${var.region}b"
+  availability_zone = "${var.region}a"
 
   tags {
     Name = "Private subnet"
@@ -64,14 +54,80 @@ resource "aws_security_group" "allow_web" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  egress {
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   tags {
     Name = "Allow web traffic"
   }
 }
 
+resource "aws_security_group" "rem_core" {
+  name        = "rem_core"
+  description = "Specific ports for REM Core"
+  vpc_id      = "${aws_vpc.eon.id}"
+
+  ingress {
+    from_port   = 8888
+    to_port     = 8888
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 9876
+    to_port     = 9876
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 9877
+    to_port     = 9877
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 8888
+    to_port     = 8888
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 9876
+    to_port     = 9876
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 9877
+    to_port     = 9877
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags {
+    Name = "Specific ports for REM Core."
+  }
+}
+
 resource "aws_security_group" "allow_internal" {
   name        = "allow_internal"
-  description = "Allow traffic from public subnet only"
+  description = "Allow from public subnet only"
   vpc_id      = "${aws_vpc.eon.id}"
 
   # ingress {
@@ -82,13 +138,14 @@ resource "aws_security_group" "allow_internal" {
   # }
 
   tags {
-    Name = "DB SG"
+    Name = "Allow from public subnet only"
   }
 }
 
 resource "aws_security_group" "allow_ssh" {
   name        = "allow_ssh"
   description = "Allow inbound ssh traffic"
+  vpc_id      = "${aws_vpc.eon.id}"
 
   ingress {
     from_port   = 22
@@ -102,7 +159,7 @@ resource "aws_security_group" "allow_ssh" {
   }
 }
 
-resource "aws_route_table" "public_route_a" {
+resource "aws_route_table" "public_route" {
   vpc_id = "${aws_vpc.eon.id}"
 
   route {
@@ -111,29 +168,11 @@ resource "aws_route_table" "public_route_a" {
   }
 
   tags {
-    Name = "Public route a"
+    Name = "Public route"
   }
 }
 
-resource "aws_route_table" "public_route_b" {
-  vpc_id = "${aws_vpc.eon.id}"
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = "${aws_internet_gateway.gw.id}"
-  }
-
-  tags {
-    Name = "Public route a"
-  }
-}
-
-resource "aws_route_table_association" "public_route_a" {
-  subnet_id      = "${aws_subnet.public_subnet_a.id}"
-  route_table_id = "${aws_route_table.public_route_a.id}"
-}
-
-resource "aws_route_table_association" "public_route_b" {
-  subnet_id      = "${aws_subnet.public_subnet_b.id}"
-  route_table_id = "${aws_route_table.public_route_b.id}"
+resource "aws_route_table_association" "public_route" {
+  subnet_id      = "${aws_subnet.public_subnet.id}"
+  route_table_id = "${aws_route_table.public_route.id}"
 }
