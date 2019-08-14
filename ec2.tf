@@ -1,4 +1,4 @@
-resource "aws_instance" "test_block_producer" {
+resource "aws_instance" "test_bp" {
   ami           = "${var.ubuntu_18_ami}"
   instance_type = "t2.large"
   key_name      = "${aws_key_pair.serg.key_name}"
@@ -13,6 +13,12 @@ resource "aws_instance" "test_block_producer" {
   tags = {
     Name = "REM Testnet BP"
   }
+}
+
+resource "aws_eip" "test_bp_ip" {
+  instance   = "${aws_instance.test_bp.id}"
+  depends_on = ["aws_internet_gateway.gw"]
+  vpc        = true
 }
 
 data "template_file" "test_node_init" {
