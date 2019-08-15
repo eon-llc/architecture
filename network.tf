@@ -35,6 +35,30 @@ resource "aws_subnet" "private_subnet" {
   }
 }
 
+resource "aws_security_group" "allow_all" {
+  name        = "allow_all"
+  description = "Allow all, for testing"
+  vpc_id      = "${aws_vpc.eon.id}"
+
+  ingress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags {
+    Name = "Allow all, for testing"
+  }
+}
+
 resource "aws_security_group" "allow_web" {
   name        = "allow_web"
   description = "Allow inbound http traffic."
