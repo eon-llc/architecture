@@ -1,9 +1,11 @@
 #! /bin/bash
 # output can be found in /var/log/cloud-init-output.log
-sudo apt-get update
-sudo apt-get install
+sudo apt update
+sudo apt upgrade -y DEBIAN_FRONTEND=noninteractive
+sudo apt autoremove -y
 # create mount directory, mount, resize, mount on reboot
 mkdir /data
+# if volume is brand new: sudo mkfs -t ext4 /dev/xvdf
 sudo mount /dev/xvdf /data
 sudo resize2fs /dev/xvdf
 echo /dev/xvdf /data ext4 defaults,nofail 0 2 >> /etc/fstab
@@ -28,6 +30,11 @@ producer-name = ${account_name}
 signature-provider = ${public_key}=KEY:${private_key}' > ./config/config.ini
 # start the node, running in the background
 remnode --config-dir ./config/ --data-dir /data/ --delete-all-blocks --genesis-json genesis.json >> /data/remnode.log 2>&1 &
+# make sure this process is restarted on reboot
+echo '#!/bin/sh -e
+remnode --config-dir ./config/ --data-dir /data/ >> /data/remnode.log 2>&1 &
+exit 0' > /etc/rc.local
+sudo chmod +x /etc/rc.local
 # initialize wallet
 remvault &
 remcli wallet create --file walletpass
