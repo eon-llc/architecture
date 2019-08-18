@@ -1,6 +1,6 @@
 resource "aws_instance" "test_bp" {
   ami           = "${var.ubuntu_18_ami}"
-  instance_type = "t2.large"
+  instance_type = "r5.large"
   key_name      = "${aws_key_pair.serg.key_name}"
 
   vpc_security_group_ids      = ["${aws_security_group.allow_ssh.id}", "${aws_security_group.allow_web.id}", "${aws_security_group.rem_core.id}"]
