@@ -24,14 +24,16 @@ http-server-address = 0.0.0.0:8888
 p2p-listen-endpoint = 0.0.0.0:9876
 p2p-peer-address = 167.71.88.152:9877
 verbose-http-errors = true
+http-validate-host = 0
 plugin = eosio::producer_plugin
 plugin = eosio::producer_api_plugin
 producer-name = ${account_name}
 signature-provider = ${public_key}=KEY:${private_key}' > ./config/config.ini
 # start the node, running in the background
-remnode --config-dir ./config/ --data-dir /data/ --delete-all-blocks --genesis-json genesis.json >> /data/remnode.log 2>&1 &
-# make sure this process is restarted on reboot
+remnode --config-dir ./config/ --data-dir /data/ --genesis-json genesis.json >> /data/remnode.log 2>&1 &
+# make sure this process is restarted on reboot, resize mounted volume
 echo '#!/bin/sh -e
+sudo resize2fs /dev/xvdf
 remnode --config-dir ./config/ --data-dir /data/ >> /data/remnode.log 2>&1 &
 exit 0' > /etc/rc.local
 sudo chmod +x /etc/rc.local
