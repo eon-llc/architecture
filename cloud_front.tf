@@ -86,6 +86,7 @@ resource "aws_cloudfront_distribution" "rem_full_node_api" {
 
     forwarded_values {
       query_string = true
+      headers      = ["Host"]
 
       cookies {
         forward = "none"
