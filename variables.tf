@@ -6,6 +6,10 @@ variable "testnet_account_name" {}
 variable "testnet_public_key" {}
 variable "testnet_private_key" {}
 
+variable "postgres_db" {}
+variable "postgres_user" {}
+variable "postgres_pass" {}
+
 variable "eon_domain" {
   description = "Primary domain of Eon, LLC"
   default     = "https://eon.llc"
