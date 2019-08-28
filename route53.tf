@@ -22,9 +22,33 @@ resource "aws_route53_record" "website" {
   }
 }
 
+resource "aws_route53_record" "eon_api" {
+  name    = "${aws_api_gateway_domain_name.eon.domain_name}"
+  zone_id = "${aws_route53_zone.eon.id}"
+  type    = "A"
+
+  alias {
+    evaluate_target_health = true
+    name                   = "${aws_api_gateway_domain_name.eon.cloudfront_domain_name}"
+    zone_id                = "${aws_api_gateway_domain_name.eon.cloudfront_zone_id}"
+  }
+}
+
+resource "aws_route53_record" "rem_full_node_api" {
+  zone_id = "${aws_route53_zone.eon.zone_id}"
+  name    = "rem.eon.llc"
+  type    = "A"
+
+  alias {
+    name                   = "${aws_cloudfront_distribution.rem_full_node_api.domain_name}"
+    zone_id                = "${aws_cloudfront_distribution.production-bucket-eon.hosted_zone_id}"
+    evaluate_target_health = false
+  }
+}
+
 resource "aws_route53_record" "github_verification" {
   name    = "_github-challenge-eon-llc.eon.llc."
-  ttl     = 30
+  ttl     = 300
   type    = "TXT"
   zone_id = "${aws_route53_zone.eon.zone_id}"
 
