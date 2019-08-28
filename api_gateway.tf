@@ -130,7 +130,7 @@ resource "aws_api_gateway_integration_response" "lambda" {
 resource "aws_api_gateway_stage" "github" {
   stage_name            = "v1"
   rest_api_id           = "${aws_api_gateway_rest_api.eon.id}"
-  deployment_id         = "${aws_api_gateway_deployment.github.id}"
+  deployment_id         = "${aws_api_gateway_deployment.eon.id}"
   cache_cluster_enabled = true
   cache_cluster_size    = 0.5
 }
@@ -149,7 +149,7 @@ resource "aws_api_gateway_method_settings" "github" {
 # --------------------------------------------------
 # DEPLOYMENT
 # --------------------------------------------------
-resource "aws_api_gateway_deployment" "github" {
+resource "aws_api_gateway_deployment" "eon" {
   rest_api_id = "${aws_api_gateway_rest_api.eon.id}"
 
   depends_on = [
@@ -167,4 +167,14 @@ resource "aws_api_gateway_deployment" "github" {
   lifecycle {
     create_before_destroy = true
   }
+}
+
+resource "aws_api_gateway_domain_name" "eon" {
+  certificate_arn = "${aws_acm_certificate.eon_website.arn}"
+  domain_name     = "api.eon.llc"
+}
+
+resource "aws_api_gateway_base_path_mapping" "eon" {
+  api_id      = "${aws_api_gateway_rest_api.eon.id}"
+  domain_name = "${aws_api_gateway_domain_name.eon.domain_name}"
 }
