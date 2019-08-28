@@ -49,3 +49,8 @@ variable "ubuntu_16_ami" {
   description = "Amazon Linux AMI"
   default     = "ami-07b4156579ea1d7ba"
 }
+
+variable "rem_peer_address" {
+  description = "IP Address of Remme Peer"
+  default     = "167.71.88.152:9877"
+}
