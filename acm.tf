@@ -1,6 +1,7 @@
 resource "aws_acm_certificate" "eon_website" {
-  domain_name       = "eon.llc"
-  validation_method = "DNS"
+  domain_name               = "eon.llc"
+  subject_alternative_names = ["*.eon.llc"]
+  validation_method         = "DNS"
 
   tags = {
     Environment = "Production"
