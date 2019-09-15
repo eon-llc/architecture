@@ -62,7 +62,7 @@ resource "aws_cloudfront_distribution" "production-bucket-eon" {
 
 resource "aws_cloudfront_distribution" "rem_full_node_api" {
   origin {
-    domain_name = "${aws_instance.rem_full_node.public_dns}"
+    domain_name = "${aws_eip.rem_full_node.public_dns}"
     origin_id   = "${aws_instance.rem_full_node.id}"
 
     custom_origin_config {
@@ -72,6 +72,8 @@ resource "aws_cloudfront_distribution" "rem_full_node_api" {
       origin_ssl_protocols   = ["TLSv1", "TLSv1.1", "TLSv1.2"]
     }
   }
+
+  depends_on = ["aws_instance.rem_full_node"]
 
   aliases         = ["rem.eon.llc"]
   enabled         = true
