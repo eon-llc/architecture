@@ -2,13 +2,12 @@
 # output can be found in /var/log/cloud-init-output.log
 sudo apt update
 sudo apt upgrade -y DEBIAN_FRONTEND=noninteractive
-sudo apt install -y postgresql postgresql-contrib
 #---------------------------------
 # MOUNT EXTERNAL VOLUME
 #---------------------------------
 mkdir external
 mkdir external/rem
-mkdir external/postgres
+mkdir external/rocksdb
 # if volume is brand new: sudo mkfs -t ext4 /dev/xvdf
 sudo mount /dev/xvdf /external
 sudo resize2fs /dev/xvdf
@@ -16,7 +15,7 @@ echo /dev/xvdf /external ext4 defaults,nofail 0 2 >> /etc/fstab
 #---------------------------------
 # INSTALL REMCLI
 #---------------------------------
-cd /root
+cd ~
 wget https://github.com/Remmeauth/remprotocol/releases/download/0.1.0/remprotocol_0.1.0-ubuntu-18.04_amd64.deb
 sudo apt install ./remprotocol_0.1.0-ubuntu-18.04_amd64.deb
 # fetch config
@@ -61,7 +60,6 @@ apt update && apt install -y \
     clang-8             \
     git                 \
     libgmp-dev          \
-    liblmdb-dev         \
     libpq-dev           \
     lld-8               \
     lldb-8              \
@@ -80,9 +78,9 @@ update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-8 100
 
 # build boost
 cd ~
-wget https://dl.bintray.com/boostorg/release/1.69.0/source/boost_1_69_0.tar.gz
-tar xf boost_1_69_0.tar.gz
-cd boost_1_69_0
+wget https://dl.bintray.com/boostorg/release/1.70.0/source/boost_1_70_0.tar.gz
+tar xf boost_1_70_0.tar.gz
+cd boost_1_70_0
 ./bootstrap.sh
 ./b2 toolset=clang -j10 install
 
@@ -95,23 +93,10 @@ cd cmake-3.14.5
 make -j10
 make -j10 install
 
-# build spidermonkey
+# install CDT
 cd ~
-wget https://archive.mozilla.org/pub/firefox/releases/64.0/source/firefox-64.0.source.tar.xz
-tar xf firefox-64.0.source.tar.xz
-cd firefox-64.0/js/src/
-autoconf2.13
-
-mkdir build_REL.OBJ
-cd build_REL.OBJ
-SHELL=/bin/bash ../configure --disable-debug --enable-optimize --disable-jemalloc --disable-replace-malloc
-SHELL=/bin/bash make -j
-SHELL=/bin/bash make install
-
-# install CDT 1.6.1
-cd ~
-wget https://github.com/EOSIO/eosio.cdt/releases/download/v1.6.1/eosio.cdt_1.6.1-1_amd64.deb
-apt install -y ./eosio.cdt_1.6.1-1_amd64.deb
+wget https://github.com/EOSIO/eosio.cdt/releases/download/v1.6.2/eosio.cdt_1.6.2-1-ubuntu-18.04_amd64.deb
+apt install -y ./eosio.cdt_1.6.2-1-ubuntu-18.04_amd64.deb
 
 # build history tools
 cd ~
@@ -123,37 +108,57 @@ cmake -GNinja -DCMAKE_CXX_COMPILER=clang++-8 -DCMAKE_C_COMPILER=clang-8 ..
 bash -c "cd ../src && npm install node-fetch"
 ninja
 #---------------------------------
-# POSTGRESQL SETUP
+# NGINX REVERSE PROXY
 #---------------------------------
-# stop the process before modifying config
-sudo systemctl stop postgresql
-# move default data into new location
-sudo rsync -av /var/lib/postgresql /external
-# enable psql password auth
-sudo sed -i 's:local *all *all.*:local   all             all                                     md5:' /etc/postgresql/10/main/pg_hba.conf
-# point config directory to new location
-sudo sed -i "s:data_directory.*:data_directory = '/external/postgresql/10/main':" /etc/postgresql/10/main/postgresql.conf
-# restart process for changes to take effect
-sudo systemctl start postgresql
-# create DB and user
-sudo -u postgres psql -c "CREATE DATABASE ${postgres_db};"
-sudo -u postgres psql -c "CREATE USER ${postgres_user} PASSWORD '${postgres_pass}';"
-sudo -u postgres psql -c "ALTER DATABASE ${postgres_db} OWNER TO ${postgres_user};"
+apt-get install nginx -y
+unlink /etc/nginx/sites-enabled/default
+echo 'server {
+    listen 443 ssl;
+    listen 80 default_server;
+    listen [::]:80 default_server;
+
+    server_name rem.eon.llc;
+
+    types {
+        application/wasm wasm;
+        text/html html;
+    }
+
+    location / {
+        try_files $uri $uri/ =404;
+    }
+
+    location /v1/ {
+        proxy_pass http://127.0.0.1:8888;
+    }
+
+    location /wasmql/ {
+        proxy_pass http://127.0.0.1:8880;
+    }
+}' > /etc/nginx/sites-available/reverse-proxy.conf
+sudo ln -s /etc/nginx/sites-available/reverse-proxy.conf /etc/nginx/sites-enabled/
+sudo systemctl restart nginx
+sudo systemctl enable nginx
 #---------------------------------
-# START
+# INSTALL AND INIT SSL CERT
+#---------------------------------
+sudo apt-get install software-properties-common -y
+sudo add-apt-repository universe
+sudo add-apt-repository ppa:certbot/certbot -y
+sudo apt-get update
+sudo apt-get install certbot python-certbot-nginx -y
+sudo certbot --nginx --noninteractive --agree-tos --email support@eon.llc --domains rem.eon.llc
+sudo certbot renew --dry-run
+#---------------------------------
+# START PROCESSES
 #---------------------------------
 # set environment variables
-# export PGUSER="rem" PGPASSWORD="by9eKEb7Ty6Pfts8njYKPKvB" PGDATABASE="rem"
-export PGUSER="${postgres_user}" PGPASSWORD="${postgres_pass}" PGDATABASE="${postgres_db}"
-nohup ~/history-tools/build/fill-pg --fpg-create &> /dev/null &
-nohup ~/history-tools/build/wasm-ql-pg &> /dev/null &
+nohup ~/history-tools/build/combo-rocksdb --rdb-database /external/rocksdb &> /dev/null &
 # restart all processes on reboot, resize mounted volume
 echo '#!/bin/sh -e
 sudo resize2fs /dev/xvdf
-remnode --config-dir ./config/ --data-dir /external/rem/ >> /external/rem/remnode.log 2>&1 &
-export PGUSER="${postgres_user}" PGPASSWORD="${postgres_pass}" PGDATABASE="${postgres_db}"
-nohup ~/history-tools/build/fill-pg &> /dev/null &
-nohup ~/history-tools/build/wasm-ql-pg &> /dev/null &
+remnode --config-dir ./config/ --data-dir /external/rem/ --disable-replay-opts >> /external/rem/remnode.log 2>&1 &
+nohup ~/history-tools/build/combo-rocksdb --rdb-database /external/rocksdb &> /dev/null &
 exit 0' > /etc/rc.local
 sudo chmod +x /etc/rc.local
 #---------------------------------
@@ -161,9 +166,7 @@ sudo chmod +x /etc/rc.local
 #---------------------------------
 cd ~
 sudo apt autoremove -y
-sudo rm boost_1_69_0.tar.gz \
+sudo rm boost_1_70_0.tar.gz \
     cmake-3.14.5.tar.gz \
     eosio.cdt_1.6.1-1_amd64.deb \
-    eosio_1.8.1-1-ubuntu-18.04_amd64.deb \
-    firefox-64.0.source.tar.xz \
     remprotocol_0.1.0-ubuntu-18.04_amd64.deb

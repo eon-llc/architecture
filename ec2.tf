@@ -39,7 +39,7 @@ data "template_file" "rem_producing_node_init" {
 
 resource "aws_instance" "rem_full_node" {
   ami           = "${var.ubuntu_18_ami}"
-  instance_type = "t2.xlarge"
+  instance_type = "t2.large"
   key_name      = "${aws_key_pair.serg.key_name}"
 
   vpc_security_group_ids      = ["${aws_security_group.allow_ssh.id}", "${aws_security_group.allow_web.id}", "${aws_security_group.rem_core.id}"]
@@ -72,9 +72,6 @@ data "template_file" "rem_full_node_init" {
   template = "${file("user_data/rem_full_node.sh.tpl")}"
 
   vars {
-    postgres_db      = "${var.postgres_db}"
-    postgres_user    = "${var.postgres_user}"
-    postgres_pass    = "${var.postgres_pass}"
     rem_peer_address = "${var.rem_peer_address}"
   }
 }

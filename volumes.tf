@@ -14,18 +14,18 @@ resource "aws_volume_attachment" "rem_producing_node_ebs_att" {
   instance_id = "${aws_instance.rem_producing_node.id}"
 }
 
-resource "aws_ebs_volume" "rem_postgesql" {
+resource "aws_ebs_volume" "rem_rocksdb" {
   availability_zone = "${var.region}a"
   size              = 100
   type              = "gp2"
 
   tags {
-    Name = "REM PostgreSQL"
+    Name = "REM RocksDB"
   }
 }
 
-resource "aws_volume_attachment" "rem_postgesql_ebs_att" {
+resource "aws_volume_attachment" "rem_rocksdb_ebs_att" {
   device_name = "/dev/sdf"
-  volume_id   = "${aws_ebs_volume.rem_postgesql.id}"
+  volume_id   = "${aws_ebs_volume.rem_rocksdb.id}"
   instance_id = "${aws_instance.rem_full_node.id}"
 }
