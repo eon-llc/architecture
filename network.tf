@@ -123,6 +123,13 @@ resource "aws_security_group" "rem_core" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  ingress {
+    from_port   = 2087
+    to_port     = 2087
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
   egress {
     from_port   = 8888
     to_port     = 8888
@@ -140,6 +147,13 @@ resource "aws_security_group" "rem_core" {
   egress {
     from_port   = 9877
     to_port     = 9877
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 2087
+    to_port     = 2087
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
@@ -163,6 +177,30 @@ resource "aws_security_group" "allow_internal" {
 
   tags {
     Name = "Allow from public subnet only"
+  }
+}
+
+resource "aws_security_group" "allow_psql" {
+  name        = "allow_psql"
+  description = "Allow inbound psql traffic"
+  vpc_id      = "${aws_vpc.eon.id}"
+
+  ingress {
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 5432
+    to_port     = 5432
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags {
+    Name = "Allow psql traffic"
   }
 }
 
