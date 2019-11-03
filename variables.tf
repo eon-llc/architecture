@@ -2,9 +2,23 @@ variable "access_key" {}
 variable "secret_key" {}
 variable "github_token" {}
 
-variable "testnet_account_name" {}
-variable "testnet_public_key" {}
-variable "testnet_private_key" {}
+variable "rem_account_name" {}
+variable "rem_permission_name" {}
+variable "rem_public_key" {}
+variable "rem_private_key" {}
+variable "rem_eth_wss_provider" {}
+variable "rem_cryptocompare_api_key" {}
+
+variable "benchmark_db" {}
+variable "benchmark_table" {}
+variable "benchmark_user" {}
+variable "benchmark_pass" {}
+variable "benchmark_db_port" {}
+variable "benchmark_private_key" {}
+variable "benchmark_wallet_name" {}
+variable "benchmark_wallet_pass" {}
+
+variable "discord_channel" {}
 
 variable "eon_domain" {
   description = "Primary domain of Eon, LLC"
@@ -32,13 +46,21 @@ variable "private_subnet_cidr" {
 }
 
 variable "amazon_linux_ami" {
-  description = "Amazon Linux AMI"
-  default     = "ami-0c6b1d09930fac512"
+  description = "Instance AMI"
+  default     = "ami-04b9e92b5572fa0d1"
 }
 
+// canonical
 variable "ubuntu_18_ami" {
   description = "Amazon Linux AMI"
   default     = "ami-07d0cf3af28718ef8"
+}
+
+// canonical ubuntu 18 doesn't support
+// graceful shutdown of services
+variable "ubuntu_18_net_ami" {
+  description = "Ubuntu with .NET core 2.1"
+  default     = "ami-e24b7d9d"
 }
 
 variable "ubuntu_16_ami" {
