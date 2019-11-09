@@ -14,19 +14,19 @@ resource "aws_volume_attachment" "rem_producing_node_ebs_att" {
   instance_id = "${aws_instance.rem_producing_node.id}"
 }
 
-resource "aws_ebs_volume" "rem_rocksdb" {
+resource "aws_ebs_volume" "rem_full_node_api_db" {
   availability_zone = "${var.region}a"
   size              = 100
   type              = "gp2"
 
   tags {
-    Name = "REM RocksDB"
+    Name = "REM Full Node API DB"
   }
 }
 
-resource "aws_volume_attachment" "rem_rocksdb_ebs_att" {
+resource "aws_volume_attachment" "rem_full_node_api_db_ebs_att" {
   device_name = "/dev/sdf"
-  volume_id   = "${aws_ebs_volume.rem_rocksdb.id}"
+  volume_id   = "${aws_ebs_volume.rem_full_node_api_db.id}"
   instance_id = "${aws_instance.rem_full_node.id}"
 }
 
