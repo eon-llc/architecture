@@ -60,59 +60,70 @@ resource "aws_cloudfront_distribution" "production-bucket-eon" {
   }
 }
 
-resource "aws_cloudfront_distribution" "rem_full_node_api" {
-  origin {
-    domain_name = "${aws_eip.rem_full_node.public_dns}"
-    origin_id   = "${aws_instance.rem_full_node.id}"
+# resource "aws_cloudfront_distribution" "rem_full_node_api" {
+#   origin {
+#     domain_name = "${aws_eip.rem_full_node.public_dns}"
+#     origin_id   = "${aws_instance.rem_full_node.id}"
 
-    custom_origin_config {
-      origin_protocol_policy = "match-viewer"
-      http_port              = "80"
-      https_port             = "443"
-      origin_ssl_protocols   = ["TLSv1", "TLSv1.1", "TLSv1.2"]
-    }
-  }
 
-  depends_on = ["aws_instance.rem_full_node"]
+#     custom_origin_config {
+#       origin_protocol_policy = "match-viewer"
+#       http_port              = "80"
+#       https_port             = "443"
+#       origin_ssl_protocols   = ["TLSv1", "TLSv1.1", "TLSv1.2"]
+#     }
+#   }
 
-  aliases         = ["rem.eon.llc"]
-  enabled         = true
-  is_ipv6_enabled = false
-  comment         = "REM API"
-  price_class     = "PriceClass_100"
 
-  default_cache_behavior {
-    allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
-    cached_methods   = ["HEAD", "GET", "OPTIONS"]
-    target_origin_id = "${aws_instance.rem_full_node.id}"
+#   depends_on = ["aws_instance.rem_full_node"]
 
-    forwarded_values {
-      query_string = true
-      headers      = ["Host"]
 
-      cookies {
-        forward = "none"
-      }
-    }
+#   aliases         = ["rem.eon.llc"]
+#   enabled         = true
+#   is_ipv6_enabled = false
+#   comment         = "REM API"
+#   price_class     = "PriceClass_100"
 
-    viewer_protocol_policy = "allow-all"
-    min_ttl                = 0
-    default_ttl            = 0
-    max_ttl                = 0
-  }
 
-  restrictions {
-    geo_restriction {
-      restriction_type = "none"
-    }
-  }
+#   default_cache_behavior {
+#     allowed_methods  = ["DELETE", "GET", "HEAD", "OPTIONS", "PATCH", "POST", "PUT"]
+#     cached_methods   = ["HEAD", "GET", "OPTIONS"]
+#     target_origin_id = "${aws_instance.rem_full_node.id}"
 
-  viewer_certificate {
-    acm_certificate_arn = "${aws_acm_certificate.eon_website.arn}"
-    ssl_support_method  = "sni-only"
-  }
 
-  tags {
-    Environment = "production"
-  }
-}
+#     forwarded_values {
+#       query_string = true
+#       headers      = ["Host"]
+
+
+#       cookies {
+#         forward = "none"
+#       }
+#     }
+
+
+#     viewer_protocol_policy = "allow-all"
+#     min_ttl                = 0
+#     default_ttl            = 0
+#     max_ttl                = 0
+#   }
+
+
+#   restrictions {
+#     geo_restriction {
+#       restriction_type = "none"
+#     }
+#   }
+
+
+#   viewer_certificate {
+#     acm_certificate_arn = "${aws_acm_certificate.eon_website.arn}"
+#     ssl_support_method  = "sni-only"
+#   }
+
+
+#   tags {
+#     Environment = "production"
+#   }
+# }
+
