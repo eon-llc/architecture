@@ -38,12 +38,9 @@ resource "aws_route53_record" "rem_full_node_api" {
   zone_id = "${aws_route53_zone.eon.zone_id}"
   name    = "rem.eon.llc"
   type    = "A"
+  ttl     = "300"
 
-  alias {
-    name                   = "${aws_cloudfront_distribution.rem_full_node_api.domain_name}"
-    zone_id                = "${aws_cloudfront_distribution.production-bucket-eon.hosted_zone_id}"
-    evaluate_target_health = false
-  }
+  records = ["${aws_eip.rem_full_node.public_ip}"]
 }
 
 resource "aws_route53_record" "rem_producer_node_p2p" {
@@ -52,7 +49,7 @@ resource "aws_route53_record" "rem_producer_node_p2p" {
   type    = "A"
   ttl     = "300"
 
-  records = ["${aws_eip.rem_producing_node_ip.public_ip}"]
+  records = ["${aws_eip.rem_producing_node.public_ip}"]
 }
 
 resource "aws_route53_record" "github_verification" {
