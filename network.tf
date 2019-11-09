@@ -158,6 +158,14 @@ resource "aws_security_group" "rem_core" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
+  egress {
+    from_port   = 123
+    to_port     = 123
+    protocol    = "udp"
+    cidr_blocks = ["0.0.0.0/0"]
+    description = "chrony"
+  }
+
   tags {
     Name = "Specific ports for REM Core."
   }
@@ -177,30 +185,6 @@ resource "aws_security_group" "allow_internal" {
 
   tags {
     Name = "Allow from public subnet only"
-  }
-}
-
-resource "aws_security_group" "allow_psql" {
-  name        = "allow_psql"
-  description = "Allow inbound psql traffic"
-  vpc_id      = "${aws_vpc.eon.id}"
-
-  ingress {
-    from_port   = 5432
-    to_port     = 5432
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  egress {
-    from_port   = 5432
-    to_port     = 5432
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  tags {
-    Name = "Allow psql traffic"
   }
 }
 
