@@ -9,6 +9,9 @@ variable "rem_private_key" {}
 variable "rem_eth_wss_provider" {}
 variable "rem_cryptocompare_api_key" {}
 
+variable "hyperion_user" {}
+variable "hyperion_pass" {}
+
 variable "benchmark_db" {}
 variable "benchmark_table" {}
 variable "benchmark_user" {}
