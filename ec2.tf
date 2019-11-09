@@ -15,7 +15,7 @@ resource "aws_instance" "rem_producing_node" {
   }
 }
 
-resource "aws_eip" "rem_producing_node_ip" {
+resource "aws_eip" "rem_producing_node" {
   instance   = "${aws_instance.rem_producing_node.id}"
   depends_on = ["aws_internet_gateway.gw"]
   vpc        = true
@@ -43,10 +43,10 @@ data "template_file" "rem_producing_node_init" {
 
 resource "aws_instance" "rem_full_node" {
   ami           = "${var.ubuntu_18_net_ami}"
-  instance_type = "t2.large"
+  instance_type = "t2.medium"
   key_name      = "${aws_key_pair.serg.key_name}"
 
-  vpc_security_group_ids      = ["${aws_security_group.allow_ssh.id}", "${aws_security_group.allow_web.id}", "${aws_security_group.rem_core.id}", "${aws_security_group.allow_psql.id}"]
+  vpc_security_group_ids      = ["${aws_security_group.allow_ssh.id}", "${aws_security_group.allow_web.id}", "${aws_security_group.rem_core.id}"]
   subnet_id                   = "${aws_subnet.public_subnet.id}"
   associate_public_ip_address = true
   source_dest_check           = false
@@ -87,6 +87,8 @@ data "template_file" "rem_full_node_init" {
     benchmark_wallet_name = "${var.benchmark_wallet_name}"
     benchmark_wallet_pass = "${var.benchmark_wallet_pass}"
     discord_channel       = "${var.discord_channel}"
+    hyperion_user         = "${var.hyperion_user}"
+    hyperion_pass         = "${var.hyperion_pass}"
   }
 }
 
