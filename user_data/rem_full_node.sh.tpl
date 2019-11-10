@@ -155,18 +155,9 @@ cd Hyperion-History-API
 npm install
 cp example-ecosystem.config.js ecosystem.config.js
 cp example-connections.json connections.json
-#sed -i 's/NODEOS_HTTP: "http:\/\/127.0.0.1:180",/NODEOS_HTTP: "http:\/\/127.0.0.1:8888",/' ecosystem.config.js
 sed -i '0,/name:/{s/"user":.*,/"user": "${hyperion_user}",/}' connections.json
 sed -i '0,/name:/{s/"pass":.*,/"pass": "${hyperion_pass}",/}' connections.json
-sed -i "s/PREVIEW:.*,/PREVIEW: 'true',/" ecosystem.config.js
 sed -i "s/SERVER_NAME:.*,/SERVER_NAME: 'rem.eon.llc',/" ecosystem.config.js
-
-# start API and Indexer
-sudo pm2 start --update-env
-sleep 5s
-sudo pm2 stop Indexer
-sed -i 's/PREVIEW: "true",/PREVIEW: "false",/' ecosystem.config.js
-sudo pm2 start Indexer --update-env
 #---------------------------------
 # NGINX REVERSE PROXY
 #---------------------------------
