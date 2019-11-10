@@ -4,40 +4,42 @@ echo "---RUNNING UPDATES & INSTALLS---"
 sudo add-apt-repository ppa:longsleep/golang-backports
 sudo apt-get update
 sudo apt-get install golang-go -y
-sudo apt-get upgrade -y DEBIAN_FRONTEND=noninteractive
+sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
 sudo apt-get install -y postgresql postgresql-contrib
 #---------------------------------
 # MOUNT EXTERNAL VOLUME
 #---------------------------------
 echo "---MOUNTING EXTERNAL VOLUME---"
-mkdir external
-# if volume is brand new: sudo mkfs -t ext4 /dev/xvdf
-sudo mount /dev/xvdf /external
-sudo resize2fs /dev/xvdf
-echo /dev/xvdf /external ext4 defaults,nofail 0 2 >> /etc/fstab
+mkdir -p /data
+# if volume is brand new, create a file system
+# to completely wipe a file system use: sudo wipefs --all --force /dev/xvdf
+if [ "$(sudo file -s /dev/xvdf)" == "/dev/xvdf: data" ]; then sudo mkfs -t ext4 /dev/xvdf; fi
+# mount the volume
+sudo mount /dev/xvdf /data
+echo UUID=$(findmnt -fn -o UUID /dev/xvdf) /data ext4 defaults,nofail 0 2 >> /etc/fstab
 #---------------------------------
 # POSTGRESQL SETUP
 #---------------------------------
 # stop the process before modifying config
 echo "---STOPPING PSQL---"
 sudo systemctl stop postgresql
-# if new setup move default data into new location: sudo rsync -av /var/lib/postgresql /external
+# if new setup move default data into new location
+if [ ! -d "/data/postgresql" ]; then sudo rsync -av /var/lib/postgresql /data; fi
 # enable psql password auth
 sudo sed -i "s:local *all *all.*:host  all  all  0.0.0.0/0 md5\nlocal  all  all  peer:" /etc/postgresql/10/main/pg_hba.conf
 # point config directory to new location
-sudo sed -i "s:data_directory.*:data_directory = '/external/postgresql/10/main':" /etc/postgresql/10/main/postgresql.conf
+sudo sed -i "s:data_directory.*:data_directory = '/data/postgresql/10/main':" /etc/postgresql/10/main/postgresql.conf
 # allow remote connections
 sudo sed -i "s:#listen_addresses.*:listen_addresses = '*':" /etc/postgresql/10/main/postgresql.conf
 # restart process for changes to take effect
 echo "---STARTING PSQL---"
 sudo systemctl start postgresql
-sudo systemctl status postgresql
 # create DB and user
 echo "---RUNNING SETUP QUERIES---"
 sudo -u postgres psql -c "CREATE DATABASE ${benchmark_db};"
 sudo -u postgres psql -c "CREATE USER ${benchmark_user} PASSWORD '${benchmark_pass}';"
 # create table
-sudo -u postgres psql -d $benchmark_db -c "CREATE TABLE ${benchmark_table}(
+sudo -u postgres psql -d ${benchmark_db} -c "CREATE TABLE ${benchmark_table}(
    id SERIAL PRIMARY KEY,
    producer VARCHAR (50) NOT NULL,
    cpu_usage_us INT NOT NULL,
@@ -46,27 +48,48 @@ sudo -u postgres psql -d $benchmark_db -c "CREATE TABLE ${benchmark_table}(
    created_on TIMESTAMPTZ NOT NULL
 );"
 sudo -u postgres psql -c "ALTER DATABASE ${benchmark_db} OWNER TO ${benchmark_user};"
-sudo -u postgres psql -d $benchmark_db -c "ALTER TABLE ${benchmark_table} OWNER TO ${benchmark_user};"
-sudo -u postgres psql -d $benchmark_db -c "GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ${benchmark_user};"
-sudo -u postgres psql -d $benchmark_db -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ${benchmark_user};"
+sudo -u postgres psql -d ${benchmark_db} -c "ALTER TABLE ${benchmark_table} OWNER TO ${benchmark_user};"
+sudo -u postgres psql -d ${benchmark_db} -c "GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ${benchmark_user};"
+sudo -u postgres psql -d ${benchmark_db} -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ${benchmark_user};"
 #---------------------------------
 # BENCHMARK API BACKEND SETUP
 #---------------------------------
 echo "---INSTALLING BACKEND API---"
+mkdir -p /root/go/cache
+export GOPATH=/root/go
+export GOCACHE=/root/go/cache
 cd ~
 git clone https://github.com/eon-llc/rem-benchmark-api.git
 cd rem-benchmark-api/
-sudo go get -u github.com/lib/pq
-sudo go get -u github.com/gorilla/mux
-sudo go get -u github.com/joho/godotenv
-echo "DB_NAME=vmlucgke
-TABLE_NAME=benchmarks
+sudo go get -v -u github.com/lib/pq
+sudo go get -v -u github.com/gorilla/mux
+sudo go get -v -u github.com/joho/godotenv
+echo "DB_NAME=${benchmark_db}
+TABLE_NAME=${benchmark_table}
 DB_HOST=127.0.0.1
-DB_USER=oalabncu
-DB_PASS=8gHvnpKDdBPXa44XjzmAMAwmCtLCfgei3qwiDUkq
-DB_PORT=5432" > ./.env
+DB_USER=${benchmark_user}
+DB_PASS=${benchmark_pass}
+DB_PORT=${benchmark_db_port}" > ./.env
 go build main.go
-nohup ./main &
+# run benchmark as a service
+echo '[Unit]
+Description=Benchmark API service
+DefaultDependencies=no
+After=postgresql.service
+RequiresMountsFor=/data
+Requires=postgresql.service network.target data.mount
+
+[Service]
+Type=simple
+ExecStart=/root/rem-benchmark-api/main
+Restart=always
+RestartSec=1
+
+[Install]
+WantedBy=postgresql.service' > /etc/systemd/system/benchmark_api.service
+systemctl daemon-reload
+systemctl enable benchmark_api
+systemctl restart benchmark_api
 #---------------------------------
 # NGINX REVERSE PROXY
 #---------------------------------
@@ -118,7 +141,7 @@ sudo systemctl enable nginx
 # MOUNT VOLUME ON REBOOT
 #---------------------------------
 echo "---CREATING REBOOT INSTRUCTIONS---"
-echo '#!/bin/sh -e
+echo '#!/bin/bash
 sudo resize2fs /dev/xvdf
 exit 0' > /etc/rc.local
 sudo chmod +x /etc/rc.local
