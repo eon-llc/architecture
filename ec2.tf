@@ -46,7 +46,7 @@ resource "aws_instance" "rem_full_node" {
   instance_type = "t2.medium"
   key_name      = "${aws_key_pair.serg.key_name}"
 
-  vpc_security_group_ids      = ["${aws_security_group.allow_ssh.id}", "${aws_security_group.allow_web.id}", "${aws_security_group.rem_core.id}"]
+  vpc_security_group_ids      = ["${aws_security_group.allow_ssh.id}", "${aws_security_group.allow_web.id}", "${aws_security_group.rem_core.id}", "${aws_security_group.allow_psql.id}"]
   subnet_id                   = "${aws_subnet.public_subnet.id}"
   associate_public_ip_address = true
   source_dest_check           = false
