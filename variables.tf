@@ -53,22 +53,9 @@ variable "amazon_linux_ami" {
   default     = "ami-04b9e92b5572fa0d1"
 }
 
-// canonical
 variable "ubuntu_18_ami" {
   description = "Amazon Linux AMI"
   default     = "ami-07d0cf3af28718ef8"
-}
-
-// canonical ubuntu 18 doesn't support
-// graceful shutdown of services
-variable "ubuntu_18_net_ami" {
-  description = "Ubuntu with .NET core 2.1"
-  default     = "ami-e24b7d9d"
-}
-
-variable "ubuntu_16_ami" {
-  description = "Amazon Linux AMI"
-  default     = "ami-07b4156579ea1d7ba"
 }
 
 variable "rem_peer_address" {
