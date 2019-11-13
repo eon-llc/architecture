@@ -150,14 +150,17 @@ sudo systemctl restart redis.service
 # sudo pm2 logs
 sudo chown -R $USER:$(id -gn $USER) ~/.config
 
-git clone https://github.com/eosrio/Hyperion-History-API.git
+git clone https://github.com/Remmeauth/Hyperion-History-API.git
 cd Hyperion-History-API
 npm install
 cp example-ecosystem.config.js ecosystem.config.js
 cp example-connections.json connections.json
 sed -i '0,/name:/{s/"user":.*,/"user": "${hyperion_user}",/}' connections.json
 sed -i '0,/name:/{s/"pass":.*,/"pass": "${hyperion_pass}",/}' connections.json
+sed -i 's/"eos": {/"rem": {/' connections.json
 sed -i "s/SERVER_NAME:.*,/SERVER_NAME: 'rem.eon.llc',/" ecosystem.config.js
+sed -i "s/CHAIN:.*,/CHAIN: 'rem',/" ecosystem.config.js
+sed -i "s/SYSTEM_DOMAIN:.*,/SYSTEM_DOMAIN: 'rem',/" ecosystem.config.js
 #---------------------------------
 # NGINX REVERSE PROXY
 #---------------------------------
@@ -176,7 +179,7 @@ echo 'server {
     access_log /var/log/nginx/api.boscore.io.access.log;
     error_log /var/log/nginx/api.boscore.io.error.log;
 
-    add_header "Access-Control-Allow-Origin" "*";
+    # add_header "Access-Control-Allow-Origin" "*";
     # add_header "Access-Control-Allow-Credentials" "true";
     add_header "Access-Control-Allow-Headers" "Origin, X-Requested-With, Content-Type, Authorization, X-Custom-Header, token, timestamp, version";
     add_header "Access-Control-Expose-Headers" "*";
@@ -293,8 +296,7 @@ echo '[Unit]
 Description=Gracefully shut down remnode to avoid database dirty flag
 DefaultDependencies=no
 After=poweroff.target shutdown.target reboot.target halt.target kexec.target
-RequiresMountsFor=/data
-Requires=network-online.target network.target external.mount
+Requires=network-online.target network.target
 
 [Service]
 Type=oneshot
