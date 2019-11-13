@@ -1,5 +1,5 @@
 resource "aws_instance" "rem_producing_node" {
-  ami           = "${var.ubuntu_18_net_ami}"
+  ami           = "${var.ubuntu_18_ami}"
   instance_type = "c5.large"
   key_name      = "${aws_key_pair.serg.key_name}"
 
@@ -42,7 +42,7 @@ data "template_file" "rem_producing_node_init" {
 }
 
 resource "aws_instance" "rem_full_node" {
-  ami           = "${var.ubuntu_18_net_ami}"
+  ami           = "${var.ubuntu_18_ami}"
   instance_type = "t2.medium"
   key_name      = "${aws_key_pair.serg.key_name}"
 
