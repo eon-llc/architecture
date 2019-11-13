@@ -116,8 +116,7 @@ echo '[Unit]
 Description=Gracefully shut down remnode to avoid database dirty flag
 DefaultDependencies=no
 After=poweroff.target shutdown.target reboot.target halt.target kexec.target
-RequiresMountsFor=/data
-Requires=network-online.target network.target data.mount
+Requires=network-online.target network.target
 
 [Service]
 Type=oneshot
