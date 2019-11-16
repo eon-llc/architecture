@@ -7,18 +7,32 @@ sudo apt install python-pip -y
 sudo apt install python-psycopg2 -y
 sudo pip install requests
 sudo apt-get install jq -y
+sudo apt-get install unzip -y
+sudo apt-get install libwww-perl libdatetime-perl -y
 #---------------------------------
 # MOUNT EXTERNAL VOLUME
 #---------------------------------
 echo "---MOUNTING EXTERNAL VOLUME---"
 mkdir -p /data
 # if volume is brand new, create a file system
-# to completely wipe a file system use: sudo wipefs --all --force /dev/xvdf
-if [ "$(sudo file -s /dev/xvdf)" == "/dev/xvdf: data" ]; then sudo mkfs -t ext4 /dev/xvdf; fi
+# to completely wipe a file system use: sudo wipefs --all --force /dev/nvme1n1
+if [ "$(sudo file -s /dev/nvme1n1)" == "/dev/nvme1n1: data" ]; then sudo mkfs -t ext4 /dev/nvme1n1; fi
 # mount the volume
-sudo mount /dev/xvdf /data
-echo UUID=$(findmnt -fn -o UUID /dev/xvdf) /data ext4 defaults,nofail 0 2 >> /etc/fstab
+sudo mount /dev/nvme1n1 /data
+echo UUID=$(findmnt -fn -o UUID /dev/nvme1n1) /data ext4 defaults,nofail 0 2 >> /etc/fstab
 mkdir -p /data/rem
+#---------------------------------
+# SET UP AWS MONITORING
+#---------------------------------
+echo "---SETTING UP AWS MONITORING---"
+cd ~
+curl https://aws-cloudwatch.s3.amazonaws.com/downloads/CloudWatchMonitoringScripts-1.2.2.zip -O
+unzip CloudWatchMonitoringScripts-1.2.2.zip && \
+rm CloudWatchMonitoringScripts-1.2.2.zip && \
+cd aws-scripts-mon
+echo 'AWSAccessKeyId=${cw_access_key}
+AWSSecretKey=${cw_secret_key}' > awscreds.conf
+(crontab -l ; echo "*/5 * * * * /root/aws-scripts-mon/mon-put-instance-data.pl --mem-util --mem-used --mem-avail --disk-space-util --disk-space-used --disk-space-avail --disk-path=/ --disk-path=/data --from-cron") | crontab -
 #---------------------------------
 # SET UP NODE MONITORING
 #---------------------------------
@@ -59,14 +73,14 @@ http-server-address = 0.0.0.0:8888
 p2p-listen-endpoint = 0.0.0.0:9876
 verbose-http-errors = true' > ./config/config.ini
 # remove self from peers before appending to config
-sed -e '/# https:\/\/eon.llc/,+2d' /root/rem-utils/peer-lists/testnet.ini >> ./config/config.ini
+cat /root/rem-utils/peer-lists/testnet.ini >> /root/config/config.ini
 # start the node, running in the background
 # if we need to delete all blocks: --delete-all-blocks --genesis-json /root/genesis.json
 # if "database dirty flag set": --replay-blockchain --hard-replay-blockchain
 remnode --config-dir /root/config/ --data-dir /data/rem/ --state-history-dir /data/rem/shpdata --disable-replay-opts >> /data/rem/remnode.log 2>&1 &
 #---------------------------------
 # INSTALL HYPERION HISTORY API
-# https://github.com/boscore/Hyperion-History-API/blob/master/INSTALL.md
+# https://github.com/eosrio/Hyperion-History-API/blob/master/INSTALL.md
 #---------------------------------
 echo "---INSTALL HYPERION HISTORY API---"
 # install nodejs
@@ -84,7 +98,7 @@ sudo apt-get install apt-transport-https
 echo "deb https://artifacts.elastic.co/packages/7.x/apt stable main" | sudo tee -a /etc/apt/sources.list.d/elastic-7.x.list
 sudo apt-get update && sudo apt-get install elasticsearch -y
 sudo service elasticsearch stop
-sed -i "s/#cluster.name:.*/cluster.name: boshyperion/" /etc/elasticsearch/elasticsearch.yml
+sed -i "s/#cluster.name:.*/cluster.name: hyperion/" /etc/elasticsearch/elasticsearch.yml
 sed -i "s/#bootstrap.memory_lock:.*/bootstrap.memory_lock: true/" /etc/elasticsearch/elasticsearch.yml
 sed -i "s|path.data:.*|path.data: /data/elasticsearch|" /etc/elasticsearch/elasticsearch.yml
 sed -i "s|path.logs:.*|path.logs: /data/elasticsearch/log|" /etc/elasticsearch/elasticsearch.yml
@@ -128,11 +142,6 @@ EOF
 sudo apt-get update -y
 # Install rabbitmq-server and its dependencies
 sudo apt-get install rabbitmq-server -y --fix-missing
-sudo rabbitmq-plugins enable rabbitmq_management
-sudo rabbitmqctl add_vhost /hyperion
-sudo rabbitmqctl add_user ${hyperion_user} ${hyperion_pass}
-sudo rabbitmqctl set_user_tags ${hyperion_user} administrator
-sudo rabbitmqctl set_permissions -p /hyperion ${hyperion_user} ".*" ".*" ".*"
 sudo service rabbitmq-server stop
 echo 'RABBITMQ_MNESIA_BASE=/data/rabbitmq/mnesia
 RABBITMQ_LOG_BASE=/data/rabbitmq/log
@@ -141,6 +150,11 @@ mkdir -p /data/rabbitmq
 sudo chown rabbitmq:rabbitmq /data/rabbitmq/
 sudo mv -v /var/lib/rabbitmq/* /data/rabbitmq/
 sudo service rabbitmq-server start
+sudo rabbitmq-plugins enable rabbitmq_management
+sudo rabbitmqctl add_vhost /hyperion
+sudo rabbitmqctl add_user ${hyperion_user} ${hyperion_pass}
+sudo rabbitmqctl set_user_tags ${hyperion_user} administrator
+sudo rabbitmqctl set_permissions -p /hyperion ${hyperion_user} ".*" ".*" ".*"
 
 # install Redis
 sudo apt install redis-server -y
@@ -157,10 +171,12 @@ cp example-ecosystem.config.js ecosystem.config.js
 cp example-connections.json connections.json
 sed -i '0,/name:/{s/"user":.*,/"user": "${hyperion_user}",/}' connections.json
 sed -i '0,/name:/{s/"pass":.*,/"pass": "${hyperion_pass}",/}' connections.json
-sed -i 's/"eos": {/"rem": {/' connections.json
+sed -i 's|"host": "157.245.232.171:9200",|"host": "127.0.0.1:9200",|' connections.json
+sed -i 's|"http": "https://testchain.remme.io",|"http": "http://127.0.0.1:8888",|' connections.json
+sed -i 's|"ship": "ws://testchain.remme.io"|"ship": "ws://127.0.0.1:8080"|' connections.json
 sed -i "s/SERVER_NAME:.*,/SERVER_NAME: 'rem.eon.llc',/" ecosystem.config.js
 sed -i "s/CHAIN:.*,/CHAIN: 'rem',/" ecosystem.config.js
-sed -i "s/SYSTEM_DOMAIN:.*,/SYSTEM_DOMAIN: 'rem',/" ecosystem.config.js
+sed -i "s/ENABLE_CACHING: 'true',/ENABLE_CACHING: 'false',/" ecosystem.config.js
 #---------------------------------
 # NGINX REVERSE PROXY
 #---------------------------------
@@ -176,8 +192,8 @@ echo 'server {
     server_name rem.eon.llc;
 
     client_max_body_size 500m;
-    access_log /var/log/nginx/api.boscore.io.access.log;
-    error_log /var/log/nginx/api.boscore.io.error.log;
+    access_log /var/log/nginx/rem.eon.llc.access.log;
+    error_log /var/log/nginx/rem.eon.llc.error.log;
 
     # add_header "Access-Control-Allow-Origin" "*";
     # add_header "Access-Control-Allow-Credentials" "true";
@@ -269,9 +285,8 @@ nohup ~/history-tools/build/combo-rocksdb --rdb-database /data/rocksdb &> /dev/n
 echo "---CREATING REBOOT INSTRUCTIONS---"
 # restart all processes on reboot, resize mounted volume
 echo '#!/bin/bash
-sudo resize2fs /dev/xvdf
+sudo resize2fs /dev/nvme1n1
 remnode --config-dir /root/config/ --data-dir /data/rem/ --state-history-dir /data/rem/shpdata --disable-replay-opts >> /data/rem/remnode.log 2>&1 &
-nohup ~/history-tools/build/combo-rocksdb --rdb-database /data/rocksdb &> /dev/null &
 exit 0' > /etc/rc.local
 sudo chmod +x /etc/rc.local
 #---------------------------------

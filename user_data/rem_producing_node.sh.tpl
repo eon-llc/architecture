@@ -4,6 +4,8 @@ echo "---RUNNING UPDATES & INSTALLS---"
 sudo apt update
 sudo apt upgrade -y DEBIAN_FRONTEND=noninteractive
 sudo apt-get install jq -y
+sudo apt-get install unzip -y
+sudo apt-get install libwww-perl libdatetime-perl -y
 #---------------------------------
 # MOUNT EXTERNAL VOLUME
 #---------------------------------
@@ -16,6 +18,18 @@ if [ "$(sudo file -s /dev/nvme1n1)" == "/dev/nvme1n1: data" ]; then sudo mkfs -t
 # mount the volume
 sudo mount /dev/nvme1n1 /data
 echo UUID=$(findmnt -fn -o UUID /dev/nvme1n1) /data ext4 defaults,nofail 0 2 >> /etc/fstab
+#---------------------------------
+# SET UP AWS MONITORING
+#---------------------------------
+echo "---SETTING UP AWS MONITORING---"
+cd ~
+curl https://aws-cloudwatch.s3.amazonaws.com/downloads/CloudWatchMonitoringScripts-1.2.2.zip -O
+unzip CloudWatchMonitoringScripts-1.2.2.zip && \
+rm CloudWatchMonitoringScripts-1.2.2.zip && \
+cd aws-scripts-mon
+echo 'AWSAccessKeyId=${cw_access_key}
+AWSSecretKey=${cw_secret_key}' > awscreds.conf
+(crontab -l ; echo "*/5 * * * * /root/aws-scripts-mon/mon-put-instance-data.pl --mem-util --mem-used --mem-avail --disk-space-util --disk-space-used --disk-space-avail --disk-path=/ --disk-path=/data --from-cron") | crontab -
 #---------------------------------
 # SET UP NODE MONITORING
 #---------------------------------
@@ -79,6 +93,7 @@ echo "---STARTING PROCESSES---"
 remnode --config-dir /root/config/ --data-dir /data/ >> /data/remnode.log 2>&1 &
 # make sure this process is restarted on reboot
 echo '#!/bin/bash
+sudo resize2fs /dev/nvme1n1
 remnode --config-dir /root/config/ --data-dir /data/ >> /data/remnode.log 2>&1 &
 exit 0' > /etc/rc.local
 sudo chmod +x /etc/rc.local

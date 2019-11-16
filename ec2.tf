@@ -1,5 +1,5 @@
 resource "aws_instance" "rem_producing_node" {
-  ami           = "${var.ubuntu_18_ami}"
+  ami           = "ami-07d0cf3af28718ef8"
   instance_type = "c5.large"
   key_name      = "${aws_key_pair.serg.key_name}"
 
@@ -38,12 +38,14 @@ data "template_file" "rem_producing_node_init" {
     discord_channel       = "${var.discord_channel}"
     eth_wss_provider      = "${var.rem_eth_wss_provider}"
     cryptocompare_api_key = "${var.rem_cryptocompare_api_key}"
+    cw_access_key         = "${var.cw_access_key}"
+    cw_secret_key         = "${var.cw_secret_key}"
   }
 }
 
 resource "aws_instance" "rem_full_node" {
-  ami           = "${var.ubuntu_18_ami}"
-  instance_type = "t2.medium"
+  ami           = "ami-07d0cf3af28718ef8"
+  instance_type = "c5.xlarge"
   key_name      = "${aws_key_pair.serg.key_name}"
 
   vpc_security_group_ids      = ["${aws_security_group.allow_ssh.id}", "${aws_security_group.allow_web.id}", "${aws_security_group.rem_core.id}", "${aws_security_group.allow_psql.id}"]
@@ -89,11 +91,13 @@ data "template_file" "rem_full_node_init" {
     discord_channel       = "${var.discord_channel}"
     hyperion_user         = "${var.hyperion_user}"
     hyperion_pass         = "${var.hyperion_pass}"
+    cw_access_key         = "${var.cw_access_key}"
+    cw_secret_key         = "${var.cw_secret_key}"
   }
 }
 
 resource "aws_instance" "rem_benchmark" {
-  ami           = "${var.ubuntu_18_ami}"
+  ami           = "ami-07d0cf3af28718ef8"
   instance_type = "t2.micro"
   key_name      = "${aws_key_pair.serg.key_name}"
 
@@ -132,5 +136,7 @@ data "template_file" "rem_benchmark_node_init" {
     benchmark_user    = "${var.benchmark_user}"
     benchmark_pass    = "${var.benchmark_pass}"
     benchmark_db_port = "${var.benchmark_db_port}"
+    cw_access_key     = "${var.cw_access_key}"
+    cw_secret_key     = "${var.cw_secret_key}"
   }
 }

@@ -1,5 +1,7 @@
 variable "access_key" {}
 variable "secret_key" {}
+variable "cw_access_key" {}
+variable "cw_secret_key" {}
 variable "github_token" {}
 
 variable "rem_account_name" {}
@@ -46,16 +48,6 @@ variable "public_subnet_cidr" {
 variable "private_subnet_cidr" {
   description = "CIDR for the private subnet"
   default     = "10.0.3.0/24"
-}
-
-variable "amazon_linux_ami" {
-  description = "Instance AMI"
-  default     = "ami-04b9e92b5572fa0d1"
-}
-
-variable "ubuntu_18_ami" {
-  description = "Amazon Linux AMI"
-  default     = "ami-07d0cf3af28718ef8"
 }
 
 variable "rem_peer_address" {

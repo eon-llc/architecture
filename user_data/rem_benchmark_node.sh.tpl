@@ -6,6 +6,8 @@ sudo apt-get update
 sudo apt-get install golang-go -y
 sudo DEBIAN_FRONTEND=noninteractive apt-get upgrade -y
 sudo apt-get install -y postgresql postgresql-contrib
+sudo apt-get install unzip -y
+sudo apt-get install libwww-perl libdatetime-perl -y
 #---------------------------------
 # MOUNT EXTERNAL VOLUME
 #---------------------------------
@@ -17,6 +19,18 @@ if [ "$(sudo file -s /dev/xvdf)" == "/dev/xvdf: data" ]; then sudo mkfs -t ext4 
 # mount the volume
 sudo mount /dev/xvdf /data
 echo UUID=$(findmnt -fn -o UUID /dev/xvdf) /data ext4 defaults,nofail 0 2 >> /etc/fstab
+#---------------------------------
+# SET UP AWS MONITORING
+#---------------------------------
+echo "---SETTING UP AWS MONITORING---"
+cd ~
+curl https://aws-cloudwatch.s3.amazonaws.com/downloads/CloudWatchMonitoringScripts-1.2.2.zip -O
+unzip CloudWatchMonitoringScripts-1.2.2.zip && \
+rm CloudWatchMonitoringScripts-1.2.2.zip && \
+cd aws-scripts-mon
+echo 'AWSAccessKeyId=${cw_access_key}
+AWSSecretKey=${cw_secret_key}' > awscreds.conf
+(crontab -l ; echo "*/5 * * * * /root/aws-scripts-mon/mon-put-instance-data.pl --mem-util --mem-used --mem-avail --disk-space-util --disk-space-used --disk-space-avail --disk-path=/ --disk-path=/data --from-cron") | crontab -
 #---------------------------------
 # POSTGRESQL SETUP
 #---------------------------------
