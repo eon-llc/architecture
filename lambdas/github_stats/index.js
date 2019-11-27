@@ -35,6 +35,7 @@ exports.handler = (event, context, callback) => {
         let num_repos = 0;
         let num_commits = 0;
         let num_issues = 0;
+        const devs = ["sergchernata"];
 
         await fetch('/orgs/eon-llc/repos').then( async (repos) => {
 
@@ -49,7 +50,9 @@ exports.handler = (event, context, callback) => {
                     let commits = 0;
                     // for every contributor
                     for(let i=0; i<contributors.length; i++) {
-                        commits += contributors[i].total;
+                        if(devs.includes(contributors[i].author.login)) {
+                            commits += contributors[i].total;
+                        }
                     }
                     return commits;
                 });
