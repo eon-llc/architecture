@@ -195,7 +195,7 @@ echo 'server {
     access_log /var/log/nginx/rem.eon.llc.access.log;
     error_log /var/log/nginx/rem.eon.llc.error.log;
 
-    # add_header "Access-Control-Allow-Origin" "*";
+    add_header "Access-Control-Allow-Origin" "*";
     # add_header "Access-Control-Allow-Credentials" "true";
     add_header "Access-Control-Allow-Headers" "Origin, X-Requested-With, Content-Type, Authorization, X-Custom-Header, token, timestamp, version";
     add_header "Access-Control-Expose-Headers" "*";
@@ -216,6 +216,7 @@ echo 'server {
 
     location /v2 {
         proxy_pass http://127.0.0.1:7000/v2;
+        add_header "Access-Control-Allow-Origin" "";
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -277,6 +278,7 @@ chmod +x benchmark-check.sh
 sed -i "s/conn =.*/conn = psycopg2.connect(database='${benchmark_db}', user='${benchmark_user}', password='${benchmark_pass}', host='${benchmark_db_ip}', port='${benchmark_db_port}')/" log_to_db.py
 sed -i "s/table_name =.*/table_name = '${benchmark_table}'/" log_to_db.py
 ./benchmark-check.sh &>/dev/null &
+(crontab -l ; echo "* * * * * /usr/bin/flock -n /tmp/log_to_db.lockfile python /root/rem-benchmark/scripts/log_to_db.py") | crontab -
 #---------------------------------
 # START PROCESSES
 #---------------------------------
