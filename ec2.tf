@@ -138,5 +138,10 @@ data "template_file" "rem_benchmark_node_init" {
     benchmark_db_port = "${var.benchmark_db_port}"
     cw_access_key     = "${var.cw_access_key}"
     cw_secret_key     = "${var.cw_secret_key}"
+    alert_db          = "${var.alert_db}"
+    telegram_table    = "${var.telegram_table}"
+    alert_user        = "${var.alert_user}"
+    alert_pass        = "${var.alert_pass}"
+    alert_db_port     = "${var.alert_db_port}"
   }
 }

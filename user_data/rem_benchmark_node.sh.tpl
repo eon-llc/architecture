@@ -48,11 +48,11 @@ sudo sed -i "s:#listen_addresses.*:listen_addresses = '*':" /etc/postgresql/10/m
 # restart process for changes to take effect
 echo "---STARTING PSQL---"
 sudo systemctl start postgresql
-# create DB and user
+# create DB and user for benchmarks
 echo "---RUNNING SETUP QUERIES---"
 sudo -u postgres psql -c "CREATE DATABASE ${benchmark_db};"
 sudo -u postgres psql -c "CREATE USER ${benchmark_user} PASSWORD '${benchmark_pass}';"
-# create table
+# create table for benchmarks
 sudo -u postgres psql -d ${benchmark_db} -c "CREATE TABLE ${benchmark_table}(
    id SERIAL PRIMARY KEY,
    producer VARCHAR (50) NOT NULL,
@@ -65,6 +65,24 @@ sudo -u postgres psql -c "ALTER DATABASE ${benchmark_db} OWNER TO ${benchmark_us
 sudo -u postgres psql -d ${benchmark_db} -c "ALTER TABLE ${benchmark_table} OWNER TO ${benchmark_user};"
 sudo -u postgres psql -d ${benchmark_db} -c "GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ${benchmark_user};"
 sudo -u postgres psql -d ${benchmark_db} -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ${benchmark_user};"
+# create DB and user for benchmarks
+echo "---RUNNING SETUP QUERIES---"
+sudo -u postgres psql -c "CREATE DATABASE ${alert_db};"
+sudo -u postgres psql -c "CREATE USER ${alert_user} PASSWORD '${alert_pass}';"
+# create table for benchmarks
+sudo -u postgres psql -d alert -c "CREATE TABLE ${telegram_table}(
+   id SERIAL PRIMARY KEY,
+   telegram_id INT NOT NULL,
+   accounts text[] DEFAULT '{}' NOT NULL,
+   editing BOOLEAN DEFAULT FALSE NOT NULL,
+   adding BOOLEAN DEFAULT TRUE NOT NULL,
+   last_check timestamp(3) with time zone,
+   settings json
+);"
+sudo -u postgres psql -c "ALTER DATABASE ${alert_db} OWNER TO ${alert_user};"
+sudo -u postgres psql -d ${alert_db} -c "ALTER TABLE ${telegram_table} OWNER TO ${alert_user};"
+sudo -u postgres psql -d ${alert_db} -c "GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO ${alert_user};"
+sudo -u postgres psql -d ${alert_db} -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO ${alert_user};"
 #---------------------------------
 # BENCHMARK API BACKEND SETUP
 #---------------------------------
@@ -105,15 +123,52 @@ systemctl daemon-reload
 systemctl enable benchmark_api
 systemctl restart benchmark_api
 #---------------------------------
+# ALERT BOT API BACKEND
+#---------------------------------
+echo "---ALERT API BACKEND---"
+cd ~
+git clone https://github.com/eon-llc/rem-alert-api.git
+cd rem-alert-api/
+sudo go get -v -u github.com/lib/pq
+sudo go get -v -u github.com/gorilla/mux
+sudo go get -v -u github.com/joho/godotenv
+sudo go get -v -u github.com/parnurzeal/gorequest
+echo "DB_NAME=${alert_db}
+TABLE_NAME=${telegram_table}
+DB_HOST=127.0.0.1
+DB_USER=${alert_user}
+DB_PASS=${alert_pass}
+DB_PORT=${alert_db_port}" > ./.env
+go build main.go
+# run benchmark as a service
+echo '[Unit]
+Description=Alert API service
+DefaultDependencies=no
+After=postgresql.service
+RequiresMountsFor=/data
+Requires=postgresql.service network.target data.mount
+
+[Service]
+Type=simple
+ExecStart=/root/rem-alert-api/main
+Restart=always
+RestartSec=1
+
+[Install]
+WantedBy=postgresql.service' > /etc/systemd/system/alert_api.service
+systemctl daemon-reload
+systemctl enable alert_api
+systemctl restart alert_api
+#---------------------------------
 # NGINX REVERSE PROXY
 #---------------------------------
 echo "---INSTALLING NGINX REVERSE PROXY---"
 cd ~
 apt-get install nginx -y
 unlink /etc/nginx/sites-enabled/default
-echo 'proxy_cache_path /tmp/cache keys_zone=cache:10m levels=1:2 inactive=600s max_size=100m;
+echo '
+proxy_cache_path /tmp/cache keys_zone=cache:10m levels=1:2 inactive=600s max_size=100m;
 proxy_cache_key $scheme$request_method$host$request_uri;
-proxy_cache_valid 200 10m;
 
 server {
     listen 80 default_server;
@@ -125,6 +180,8 @@ server {
     gunzip on;
 
     location / {
+        proxy_cache_valid 200 10m;
+
         proxy_cache cache;
         proxy_cache_lock on;
         proxy_buffering on;
@@ -146,6 +203,10 @@ server {
         add_header X-Cache $upstream_cache_status;
 
         proxy_pass http://127.0.0.1:8080;
+    }
+
+    location /alerts {
+        proxy_pass http://127.0.0.1:8090;
     }
 }' > /etc/nginx/sites-available/reverse-proxy.conf
 sudo ln -s /etc/nginx/sites-available/reverse-proxy.conf /etc/nginx/sites-enabled/
