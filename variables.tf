@@ -23,6 +23,12 @@ variable "benchmark_private_key" {}
 variable "benchmark_wallet_name" {}
 variable "benchmark_wallet_pass" {}
 
+variable "alert_db" {}
+variable "telegram_table" {}
+variable "alert_user" {}
+variable "alert_pass" {}
+variable "alert_db_port" {}
+
 variable "discord_channel" {}
 
 variable "eon_domain" {

@@ -26,3 +26,4 @@ override.tf.json
 # !example_override.tf
 *.secret.tfvars
 *.zip
+lambdas/bp_jsons/node_modules/*
