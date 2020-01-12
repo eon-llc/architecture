@@ -60,6 +60,7 @@ resource "aws_lambda_function" "bp_jsons" {
   function_name = "bp_jsons"
   handler       = "index.handler"
   runtime       = "nodejs10.x"
+  timeout       = 5
   description   = "Fetch bp.json of all producers"
   role          = "${aws_iam_role.lambda.arn}"
   filename      = "lambdas/bp_jsons.zip"

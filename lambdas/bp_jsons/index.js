@@ -9,6 +9,7 @@ exports.handler = (event, context, callback) => {
         return await axios({
             method: 'post',
             url: 'https://rem.eon.llc/v1/chain/get_table_rows',
+            timeout: 5000,
             data: {
                 "table":"producers",
                 "scope":"rem",
@@ -23,7 +24,7 @@ exports.handler = (event, context, callback) => {
             let promises = [];
 
             producers.forEach(prod => {
-                promises.push(axios.get(prod.url.replace(/\/$/, "") + "/bp.json").catch(() => { return error; }));
+                promises.push(axios.get(prod.url.replace(/\/$/, "") + "/bp.json", {timeout: 5000}).catch(() => { return error; }));
             });
 
             return await axios.all(promises)
