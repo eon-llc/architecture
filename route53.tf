@@ -45,7 +45,7 @@ resource "aws_route53_record" "rem_full_node_api" {
 
 resource "aws_route53_record" "rem_producer_node_p2p" {
   zone_id = "${aws_route53_zone.eon.zone_id}"
-  name    = "p2p.testnet.rem.eon.llc"
+  name    = "p2p.mainnet.rem.eon.llc"
   type    = "A"
   ttl     = "300"
 
